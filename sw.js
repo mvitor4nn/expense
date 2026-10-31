@@ -1,5 +1,5 @@
 /* Cache do app para abrir offline. Troque a versão ao publicar mudanças grandes. */
-const V = 'expense-v2';
+const V = 'expense-v3';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 self.addEventListener('install', e => {

@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
-/* Layout: coluna única de celular com 3 páginas deslizáveis (Início, Histórico, Definições) e barra de abas flutuante. */
+/* Layout: coluna única de celular com 3 páginas deslizáveis (Início, Desempenho, Definições) e barra de abas flutuante. */
 :root{
   --bg:#F5F2FB; --surface:#FFFFFF; --surface2:#EEE9F8; --ink:#1D1433; --muted:#665C82; --line:#E3DCF2;
   --accent:#6D28D9; --accent-ink:#FFFFFF; --logo:#6D28D9;
@@ -91,20 +91,51 @@ h2.sec{font-family:var(--font-display);font-weight:800;font-size:19px;margin:22p
 .pie-empty{width:min(232px,64vw);aspect-ratio:1;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;
   text-align:center;padding:30px;color:var(--muted);font-size:14px}
 
-/* bolhas */
-.bubbles{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
-.bubble{--c:var(--accent);width:var(--d);height:var(--d);border-radius:50%;border:2px solid var(--c);
-  background:color-mix(in srgb,var(--c) 16%,var(--surface));display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:1px;padding:6px;text-align:center;transition:transform .15s ease,background .15s ease;min-width:0}
-.bubble:hover{transform:translateY(-3px);background:color-mix(in srgb,var(--c) 26%,var(--surface))}
-.bubble:active{transform:scale(.96)}
-.b-name{font-weight:700;font-size:13.5px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
-.b-val{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:500}
-.bubble.month{--c:var(--accent)}
-.bubble.month .b-name{font-family:var(--font-display);font-weight:800;font-size:16px}
+/* lista de categorias (barras) — substitui as bolhas */
+.clist{display:flex;flex-direction:column;margin-top:2px}
+.crow{--c:var(--accent);display:block;width:100%;text-align:left;border:0;background:none;color:inherit;font:inherit;
+  padding:12px 2px 13px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s ease;border-radius:0}
+.crow:last-child{border-bottom:0}
+.crow:active{background:color-mix(in srgb,var(--c) 12%,transparent)}
+.c-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.c-name{display:flex;align-items:center;gap:9px;min-width:0;font-weight:700;font-size:15px;overflow-wrap:anywhere}
+.c-dot{flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:var(--c)}
+.c-val{flex:0 0 auto;font-weight:800;font-size:14.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-val small{font-weight:500;font-size:12px;color:var(--muted);margin-left:6px}
+.c-track{display:block;height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.c-fill{display:block;height:100%;border-radius:99px;background:var(--c);min-width:4px;transition:width .5s ease}
+.crow.month .c-name{font-family:var(--font-display);font-weight:800;font-size:16.5px}
 .hint{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--muted);font-size:12.5px;margin:26px 0 0}
 .back{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--surface2);padding:7px 12px 7px 8px;border-radius:999px;font-weight:700;font-size:13.5px}
 .empty{color:var(--muted);text-align:center;padding:36px 12px;border:2px dashed var(--line);border-radius:20px;font-size:14px}
+
+
+/* desempenho: seletor, gráfico, números */
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin:12px 0 14px}
+.seg button{border:0;background:none;border-radius:10px;padding:9px 0;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.chart-card h3{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+.chart{display:block;width:100%;height:auto;overflow:visible}
+.chart .grid{stroke:var(--line);stroke-width:1}
+.chart .ax{fill:var(--muted);font-size:11px;font-weight:700;font-family:var(--font-body)}
+.chart .l-now{fill:none;stroke:var(--accent);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.chart .l-prev{fill:none;stroke:var(--muted);opacity:.55;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.chart .l-goal{fill:none;stroke:var(--warn);stroke-width:1.8;stroke-dasharray:5 5;opacity:.9}
+.chart .d-now{fill:var(--accent)} .chart .d-prev{fill:var(--muted);opacity:.7}
+.chart .hit{fill:transparent;cursor:pointer}
+.chart .sel{fill:none;stroke:var(--ink);stroke-width:2}
+.chart-cap{min-height:20px;font-size:13px;color:var(--muted);text-align:center;margin-top:4px;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 6px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+.stat small{display:block;font-size:11.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.stat b{display:block;font-family:var(--font-display);font-weight:800;font-size:20px;margin:3px 0 1px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;font-weight:700;color:var(--muted)}
+.stat span.up{color:var(--bad)} .stat span.down{color:var(--ok)}
+html.has-bg .stat,html.has-bg .seg{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html.has-bg .chart-card,html.has-bg .chart-cap,html.has-bg .stat{text-shadow:0 1px 8px rgba(0,0,0,.5)}
 
 /* cartões e formulários */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin:0 0 12px;box-shadow:var(--shadow)}
@@ -183,10 +214,10 @@ html.has-bg:root{
   --shadow:0 10px 28px rgba(0,0,0,.35); color-scheme:dark;
 }
 html.has-bg body{background:transparent}
-html.has-bg .card,html.has-bg .tabs,html.has-bg .bubble,html.has-bg .back,html.has-bg .empty{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html.has-bg .card,html.has-bg .tabs,html.has-bg .back,html.has-bg .empty{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 html.has-bg .panel,html.has-bg .toast{background:rgba(22,15,40,.95)}
 html.has-bg .top,html.has-bg .sumlabel,html.has-bg .sumvalue,html.has-bg h2.sec,html.has-bg .page>.sub,html.has-bg .status-note,
-html.has-bg .hint,html.has-bg .note,html.has-bg .pie-empty{text-shadow:0 1px 10px rgba(0,0,0,.65)}
+html.has-bg .hint,html.has-bg .note,html.has-bg .pie-empty,html.has-bg .clist{text-shadow:0 1px 10px rgba(0,0,0,.65)}
 .theme-prev{height:120px;border-radius:14px;margin-top:12px;border:1.5px dashed var(--line);background:var(--surface2) center/cover no-repeat;
   display:grid;place-items:center;text-align:center;padding:10px;font-size:13px;color:var(--muted)}
 .theme-prev.on{border-style:solid}
@@ -214,8 +245,6 @@ html.has-bg .hint,html.has-bg .note,html.has-bg .pie-empty{text-shadow:0 1px 10p
 .badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:800;display:grid;place-items:center;padding:0 5px}
 .cat-title{display:flex;align-items:center;gap:10px;--c:var(--accent)}
 .cat-title h2.sec{margin:0}
-.b-name{font-size:12.5px;hyphens:auto;-webkit-hyphens:auto}
-.b-val{font-size:12px}
 .tx-sub{font-size:12px;font-weight:700;color:var(--c,var(--accent));margin-bottom:1px}
 html.has-bg .iconbtn{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 
@@ -287,7 +316,7 @@ html.has-bg .d-panel{background:rgba(22,15,40,.97)}
 
   <main class="pager" id="pager">
     <section class="page" id="pageHome" aria-label="Início" data-i18n-aria="tab_home"></section>
-    <section class="page" id="pageHist" aria-label="Histórico" data-i18n-aria="tab_hist"></section>
+    <section class="page" id="pageHist" aria-label="Desempenho" data-i18n-aria="tab_hist"></section>
     <section class="page" id="pageSet" aria-label="Definições" data-i18n-aria="tab_set">
       <h2 class="sec" style="margin-top:8px" data-i18n="set_title">Definições</h2>
       <p class="sub" data-i18n="set_sub"></p>
@@ -329,7 +358,7 @@ html.has-bg .d-panel{background:rgba(22,15,40,.97)}
     <button class="tab" role="tab" aria-selected="true" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span data-i18n="tab_home">Início</span></button>
     <button class="tab" role="tab" aria-selected="false" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-i18n="tab_hist">Histórico</span></button>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 15l3.5-4.5 3 2.5L19 7"/></svg><span data-i18n="tab_hist">Desempenho</span></button>
     <button class="tab" role="tab" aria-selected="false" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span data-i18n="tab_set">Definições</span></button>
   </nav>
@@ -472,7 +501,7 @@ var MONTHS={
   es:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 };
 var D={
-  tab_home:"Início|Home|Inicio", tab_hist:"Histórico|History|Historial", tab_set:"Definições|Budget|Presupuesto",
+  tab_home:"Início|Home|Inicio", tab_hist:"Desempenho|Performance|Rendimiento", tab_set:"Definições|Budget|Presupuesto",
   tabs_aria:"Telas|Screens|Pantallas", fab:"Gasto|Expense|Gasto", fab_aria:"Adicionar gasto|Add expense|Añadir gasto",
   menu_aria:"Menu|Menu|Menú", close:"Fechar|Close|Cerrar", toast_close:"Fechar aviso|Close alert|Cerrar aviso",
   spent_in:"Gasto em {m}|Spent in {m}|Gasto en {m}", pct_salary:"{p}% do salário|{p}% of salary|{p}% del salario",
@@ -484,12 +513,20 @@ var D={
   pie_empty:"Nenhum gasto neste mês. Toque em “Gasto” para registrar o primeiro.|No spending this month. Tap “Expense” to add the first one.|Sin gastos este mes. Toca “Gasto” para registrar el primero.",
   pie_aria:"Gastos por categoria no mês|Spending by category this month|Gastos por categoría del mes",
   categories:"Categorias|Categories|Categorías", filter:"Filtrar|Filter|Filtrar",
-  filter_title:"Filtrar bolhas|Filter bubbles|Filtrar burbujas",
-  filter_sub:"Escolha as categorias e subcategorias que quer ver nas bolhas. Sem nada marcado, aparece tudo.|Pick the categories and subcategories you want to see in the bubbles. With nothing selected, everything shows.|Elige las categorías y subcategorías que quieres ver en las burbujas. Sin nada marcado, se muestra todo.",
+  filter_title:"Filtrar categorias|Filter categories|Filtrar categorías",
+  filter_sub:"Escolha as categorias e subcategorias que quer ver na lista. Sem nada marcado, aparece tudo.|Pick the categories and subcategories you want to see in the list. With nothing selected, everything shows.|Elige las categorías y subcategorías que quieres ver en la lista. Sin nada marcado, se muestra todo.",
   filter_clear:"Limpar filtro|Clear filter|Quitar filtro",
   filter_none:"Nenhum gasto nos itens escolhidos.|No spending in the chosen items.|Sin gastos en lo elegido.",
   expand:"Mostrar subcategorias|Show subcategories|Mostrar subcategorías",
-  hint_hist:"Deslize para a esquerda para ver o histórico|Swipe left to see the history|Desliza a la izquierda para ver el historial",
+  hint_hist:"Deslize para a esquerda para ver o desempenho|Swipe left to see your performance|Desliza a la izquierda para ver tu rendimiento",
+  perf_week:"Semana|Week|Semana", perf_month:"Mês|Month|Mes",
+  perf_week_t:"Progresso da semana|This week's progress|Progreso de la semana", perf_month_t:"Evolução mês a mês|Month by month|Evolución mes a mes",
+  leg_now:"Atual|Current|Actual", leg_spent:"Gasto|Spent|Gasto", leg_prev:"Anterior|Previous|Anterior", leg_goal:"Limite|Limit|Límite",
+  st_week:"Gasto na semana|Spent this week|Gastado esta semana", st_big:"Maior dia|Biggest day|Día más alto",
+  st_month:"Gasto no mês|Spent this month|Gastado este mes", st_avg:"Média 6 meses|6-month average|Promedio 6 meses",
+  vs_prev:"{p}% vs anterior|{p}% vs previous|{p}% vs anterior", vs_same:"igual ao anterior|same as previous|igual al anterior",
+  week_list:"Gastos da semana|This week's spending|Gastos de la semana", hist_months:"Histórico por mês|History by month|Historial por mes",
+  week_empty:"Nenhum gasto nesta semana ainda.|No spending this week yet.|Aún no hay gastos esta semana.",
   hist_sub:"Toque em um mês para ver os gastos por categoria.|Tap a month to see spending by category.|Toca un mes para ver los gastos por categoría.",
   hist_empty:"Ainda não há meses anteriores. Quando o mês virar, os gastos aparecem aqui.|No previous months yet. When the month changes, your spending shows up here.|Aún no hay meses anteriores. Cuando cambie el mes, los gastos aparecerán aquí.",
   hint_set:"Deslize para a esquerda para as definições|Swipe left for your budget|Desliza a la izquierda para tu presupuesto",
@@ -765,8 +802,10 @@ var drill={home:null,hist:null};
 function fActive(){return S.fsubs.length>0}
 function fOn(sub){return !fActive()||S.fsubs.indexOf(sub)>-1}
 function bubD(v,max,lo,hi){return Math.round(lo+(hi-lo)*Math.sqrt(v/max))}
-function bubble(name,val,color,d,attrs,cls){
-  return '<button class="bubble'+(cls?' '+cls:'')+'" type="button" style="--c:'+color+';--d:'+d+'px" '+attrs+'><span class="b-name">'+esc(name)+'</span><span class="b-val">'+brl(val)+'</span></button>';
+function bubble(name,val,color,frac,attrs,cls,total){
+  var w=Math.max(2,Math.round(Math.min(1,frac)*100));
+  var pc=total>0?'<small>'+Math.round(val/total*100)+'%</small>':'';
+  return '<button class="crow'+(cls?' '+cls:'')+'" type="button" style="--c:'+color+'" '+attrs+'><span class="c-top"><span class="c-name"><i class="c-dot"></i>'+esc(name)+'</span><span class="c-val">'+brl(val)+pc+'</span></span><span class="c-track"><span class="c-fill" style="width:'+w+'%"></span></span></button>';
 }
 var ICON_FILTER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>';
 var ICON_BACK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>';
@@ -785,8 +824,8 @@ function bubbleBlock(month,scope){
     h='<div class="sechead"><button class="back" type="button" data-undrill="'+scope+'">'+ICON_BACK+'<span>'+L('categories')+'</span></button>'+fb+'</div>'+
       '<div class="cat-title" style="--c:'+c.color+'"><span class="sh-dot"></span><h2 class="sec">'+esc(cn(c.id))+'</h2></div>'+
       '<p class="sub" style="margin-top:4px">'+L('total_spent',{x:'<b>'+brl(by[c.id])+'</b>'})+'</p><div style="height:14px"></div>'+
-      '<div class="bubbles">'+items.map(function(s){
-        return bubble(cn(s),bySub[s],c.color,bubD(bySub[s],max,100,150),'data-sub="'+s+'" data-cat="'+c.id+'" data-month="'+month+'"');
+      '<div class="clist">'+items.sort(function(a,b){return bySub[b]-bySub[a]}).map(function(s){
+        return bubble(cn(s),bySub[s],c.color,bySub[s]/max,'data-sub="'+s+'" data-cat="'+c.id+'" data-month="'+month+'"','',by[c.id]);
       }).join('')+'</div>';
   }else{
     items=CATS.filter(function(x){return by[x.id]>0});
@@ -794,8 +833,9 @@ function bubbleBlock(month,scope){
     if(!items.length)h+='<div class="empty">'+L('filter_none')+'<div style="margin-top:12px"><button class="btn ghost" type="button" data-fclear>'+L('filter_clear')+'</button></div></div>';
     else{
       max=Math.max.apply(null,items.map(function(x){return by[x.id]}));
-      h+='<div class="bubbles">'+items.map(function(x){
-        return bubble(cn(x.id),by[x.id],x.color,bubD(by[x.id],max,96,150),'data-drill="'+x.id+'" data-scope="'+scope+'"');
+      var tsum=items.reduce(function(a,x){return a+by[x.id]},0);
+      h+='<div class="clist">'+items.sort(function(a,b){return by[b.id]-by[a.id]}).map(function(x){
+        return bubble(cn(x.id),by[x.id],x.color,by[x.id]/max,'data-drill="'+x.id+'" data-scope="'+scope+'"','',tsum);
       }).join('')+'</div>';
     }
   }
@@ -817,7 +857,92 @@ function renderHome(){
     (s.total>0?bubbleBlock(CUR,'home'):'')+
     '<div class="hint">'+L('hint_hist')+' <span aria-hidden="true">›</span></div>';
 }
-var histMonth=null;
+var histMonth=null, perfMode='week', perfSel=null;
+var WEEK_START=0; /* 0 = domingo, 1 = segunda */
+var DOW={pt:'DSTQQSS',en:'SMTWTFS',es:'DLMXJVS'};
+function dkey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function dayTotals(){var m={};S.expenses.forEach(function(e){var k=e.ts.slice(0,10);m[k]=(m[k]||0)+e.price});return m}
+function niceStep(max){var raw=Math.max(max,1)/3,k=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/k;
+  return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*k}
+/* gráfico de linhas em SVG. series: [{cls,pts:[número|null],dots:bool}] */
+function lineChart(labels,series,goal){
+  var W=340,H=192,L0=44,R0=326,T0=16,B0=160,n=labels.length;
+  var mx=0;series.forEach(function(s){s.pts.forEach(function(v){if(v!=null&&v>mx)mx=v})});if(goal>mx)mx=goal;
+  var st=niceStep(mx),top=st*3;
+  var X=function(i){return n>1?L0+(R0-L0)*i/(n-1):(L0+R0)/2},Y=function(v){return B0-(B0-T0)*v/top};
+  var o='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img">';
+  for(var g=0;g<=3;g++){var v=st*g;o+='<line class="grid" x1="'+L0+'" x2="'+R0+'" y1="'+Y(v)+'" y2="'+Y(v)+'"/><text class="ax" x="0" y="'+(Y(v)+4)+'">'+nf(v,0)+'</text>'}
+  labels.forEach(function(t,i){o+='<text class="ax" x="'+X(i)+'" y="184" text-anchor="middle">'+esc(t)+'</text>'});
+  if(goal>0)o+='<line class="l-goal" x1="'+L0+'" x2="'+R0+'" y1="'+Y(goal)+'" y2="'+Y(goal)+'"/>';
+  series.forEach(function(s,si){
+    var pts=[];s.pts.forEach(function(v,i){if(v!=null)pts.push(X(i)+','+Y(v))});
+    if(pts.length>1)o+='<polyline class="l-'+s.k+'" points="'+pts.join(' ')+'"/>';
+    s.pts.forEach(function(v,i){if(v!=null)o+='<circle class="d-'+s.k+'" cx="'+X(i)+'" cy="'+Y(v)+'" r="5.5"/>'});
+  });
+  /* áreas de toque: mostram o valor ao tocar */
+  labels.forEach(function(t,i){
+    var vals=series.map(function(s){return s.pts[i]});
+    o+='<rect class="hit" x="'+(X(i)-(R0-L0)/(2*Math.max(n-1,1)))+'" y="'+T0+'" width="'+((R0-L0)/Math.max(n-1,1))+'" height="'+(B0-T0+16)+'" data-pt="'+i+'" data-v="'+vals.map(function(v){return v==null?'':v}).join(',')+'" data-t="'+esc(t)+'"/>';
+  });
+  return o+'</svg>';
+}
+function pctTag(cur,prev){
+  if(!(prev>0))return '';
+  var d=Math.round((cur-prev)/prev*100);
+  if(d===0)return '<span>'+L('vs_same')+'</span>';
+  return '<span class="'+(d>0?'up':'down')+'">'+(d>0?'▲ ':'▼ ')+L('vs_prev',{p:Math.abs(d)})+'</span>';
+}
+function weekData(){
+  var dt=dayTotals(),now=new Date(),today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  var off=(today.getDay()-WEEK_START+7)%7,start=new Date(today.getFullYear(),today.getMonth(),today.getDate()-off);
+  var cur=[],prev=[],labels=[],keys=[];
+  for(var i=0;i<7;i++){
+    var d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),p=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i-7);
+    labels.push(DOW[lang].charAt(d.getDay()));keys.push(dkey(d));
+    prev.push(Math.round((dt[dkey(p)]||0)*100)/100);
+    cur.push(i<=off?Math.round((dt[dkey(d)]||0)*100)/100:null);
+  }
+  return {cur:cur,prev:prev,labels:labels,keys:keys,off:off};
+}
+function weekView(){
+  var w=weekData(),sc=0,sp=0,big=0,bi=0;
+  w.cur.forEach(function(v,i){if(v!=null){sc+=v;if(w.prev[i]!=null)sp+=w.prev[i];if(v>big){big=v;bi=i}}});
+  var h='<div class="card chart-card"><div class="chart-head"><h3>'+L('perf_week_t')+'</h3><div class="legend"><span><i style="background:var(--accent)"></i>'+L('leg_now')+'</span><span><i style="background:var(--muted);opacity:.6"></i>'+L('leg_prev')+'</span></div></div>'+
+    lineChart(w.labels,[{k:'prev',pts:w.prev},{k:'now',pts:w.cur}],0)+'<div class="chart-cap" id="chartCap">&nbsp;</div></div>'+
+    '<div class="stats"><div class="stat"><small>'+L('st_week')+'</small><b>'+brl(sc)+'</b>'+pctTag(sc,sp)+'</div>'+
+    '<div class="stat"><small>'+L('st_big')+'</small><b>'+(big>0?brl(big):'—')+'</b><span>'+(big>0?esc(w.keys[bi].slice(8,10)+'/'+w.keys[bi].slice(5,7)):'')+'</span></div></div>';
+  var set={};w.keys.forEach(function(k){set[k]=1});
+  var list=S.expenses.filter(function(e){return set[e.ts.slice(0,10)]}).sort(function(a,b){return a.ts<b.ts?1:-1}).slice(0,8);
+  h+='<h2 class="sec">'+L('week_list')+'</h2>';
+  if(!list.length)h+='<div class="empty">'+L('week_empty')+'</div>';
+  else h+='<ul class="txs">'+list.map(function(e){
+    return '<li class="tx"><div class="tx-body"><div class="tx-sub" style="--c:'+(CAT[e.cat]?CAT[e.cat].color:'var(--accent)')+'">'+esc(cn(e.sub))+'</div><div class="tx-name">'+esc(e.name)+'</div><div class="tx-when">'+e.ts.slice(8,10)+'/'+e.ts.slice(5,7)+' '+e.ts.slice(11,16)+'</div></div><div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div></div></li>';
+  }).join('')+'</ul>';
+  return h;
+}
+function monthView(){
+  var ks=[],y=NOW.getFullYear(),m=NOW.getMonth();
+  for(var i=5;i>=0;i--){var d=new Date(y,m-i,1);ks.push(d.getFullYear()+'-'+pad(d.getMonth()+1))}
+  var tot=ks.map(function(k){return Math.round(sum(ofMonth(k)).total*100)/100});
+  var labels=ks.map(function(k){return monthName(k).slice(0,3).toUpperCase()});
+  var goal=S.salary>0?S.salary*S.limit/100:0,c=tot[5],pv=tot[4];
+  var active=tot.filter(function(v){return v>0}),avg=active.length?active.reduce(function(a,b){return a+b},0)/active.length:0;
+  var h='<div class="card chart-card"><div class="chart-head"><h3>'+L('perf_month_t')+'</h3><div class="legend"><span><i style="background:var(--accent)"></i>'+L('tab_hist')+'</span>'+(goal>0?'<span><i style="background:var(--warn)"></i>'+L('leg_goal')+' '+S.limit+'%</span>':'')+'</div></div>'+
+    lineChart(labels,[{k:'now',pts:tot}],goal)+'<div class="chart-cap" id="chartCap">&nbsp;</div></div>'+
+    '<div class="stats"><div class="stat"><small>'+L('st_month')+'</small><b>'+brl(c)+'</b>'+pctTag(c,pv)+'</div>'+
+    '<div class="stat"><small>'+L('st_avg')+'</small><b>'+brl(avg)+'</b><span>'+(goal>0?L('leg_goal')+': '+brl(goal):'')+'</span></div></div>';
+  var keys={};S.expenses.forEach(function(e){var k=e.ts.slice(0,7);if(k<CUR)keys[k]=1});
+  var pk=Object.keys(keys).sort().reverse();
+  h+='<h2 class="sec">'+L('hist_months')+'</h2><p class="sub">'+L('hist_sub')+'</p><div style="height:10px"></div>';
+  if(!pk.length)h+='<div class="empty">'+L('hist_empty')+'</div>';
+  else{
+    var pt=pk.map(function(k){return sum(ofMonth(k)).total}),mx=Math.max.apply(null,pt);
+    h+='<div class="clist">'+pk.map(function(k,i){
+      return bubble(monthName(k),pt[i],'var(--accent)',pt[i]/mx,'data-open-month="'+k+'"','month');
+    }).join('')+'</div>';
+  }
+  return h;
+}
 function renderHist(){
   var h='';
   if(histMonth){
@@ -826,17 +951,10 @@ function renderHist(){
       '<h2 class="sec" style="margin-top:14px">'+monthName(histMonth)+'</h2><p class="sub">'+L('total_spent',{x:'<b>'+brl(s.total)+'</b>'})+'</p>'+
       (s.total>0?bubbleBlock(histMonth,'hist'):'');
   }else{
-    var keys={};S.expenses.forEach(function(e){var k=e.ts.slice(0,7);if(k<CUR)keys[k]=1});
-    var ks=Object.keys(keys).sort().reverse();
-    h='<h2 class="sec" style="margin-top:8px">'+L('tab_hist')+'</h2><p class="sub">'+L('hist_sub')+'</p><div style="height:16px"></div>';
-    if(!ks.length)h+='<div class="empty">'+L('hist_empty')+'</div>';
-    else{
-      var tot=ks.map(function(k){return sum(ofMonth(k)).total}),max=Math.max.apply(null,tot);
-      h+='<div class="bubbles">'+ks.map(function(k,i){
-        return bubble(monthName(k),tot[i],'var(--accent)',bubD(tot[i],max,112,172),'data-open-month="'+k+'"','month');
-      }).join('')+'</div>';
-    }
-    h+='<div class="hint">'+L('hint_set')+' <span aria-hidden="true">›</span></div>';
+    h='<h2 class="sec" style="margin-top:8px">'+L('tab_hist')+'</h2>'+
+      '<div class="seg" role="group"><button type="button" data-perf="week" aria-pressed="'+(perfMode==='week')+'">'+L('perf_week')+'</button><button type="button" data-perf="month" aria-pressed="'+(perfMode==='month')+'">'+L('perf_month')+'</button></div>'+
+      (perfMode==='week'?weekView():monthView())+
+      '<div class="hint">'+L('hint_set')+' <span aria-hidden="true">›</span></div>';
   }
   $('#pageHist').innerHTML=h;
 }
@@ -966,7 +1084,7 @@ document.addEventListener('input',function(e){if(e.target.id==='fPrice')maskMone
 var suppressClick=false;
 document.addEventListener('click',function(e){
   if(suppressClick){suppressClick=false;e.preventDefault();e.stopPropagation();return}
-  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-back],[data-del],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact]');
+  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-perf],[data-pt],[data-back],[data-del],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact]');
   if(!t)return;
   var has=function(a){return t.hasAttribute(a)},get=function(a){return t.getAttribute(a)};
   if(has('data-dclose'))dClose();
@@ -984,6 +1102,11 @@ document.addEventListener('click',function(e){
     var did=get('data-del'),c=ctx;
     S.expenses=S.expenses.filter(function(x){return x.id!==did});save();refresh();
     if(c)openCat(c.month,c.cat,c.sub);checkAlerts();
+  }
+  else if(has('data-perf')){perfMode=get('data-perf');renderHist()}
+  else if(has('data-pt')){
+    var cap=document.getElementById('chartCap'),vs=get('data-v').split(','),tt=get('data-t');
+    if(cap){cap.textContent=tt+' · '+vs.filter(function(v){return v!==''}).map(function(v){return brl(+v)}).join(' / ')}
   }
   else if(has('data-back')){histMonth=null;drill.hist=null;renderHist()}
   else if(has('data-open-month')){histMonth=get('data-open-month');drill.hist=null;renderHist();$('#pageHist').scrollTop=0}
