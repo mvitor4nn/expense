@@ -1,5 +1,5 @@
 /* Cache do app para abrir offline. Troque a versão ao publicar mudanças grandes. */
-const V = 'expense-v3';
+const V = 'expense-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 self.addEventListener('install', e => {
@@ -17,10 +17,12 @@ self.addEventListener('fetch', e => {
   if (!same && !FONT_HOSTS.includes(url.hostname)) return;
   /* a página abre sempre na versão mais nova quando há internet */
   if (req.mode === 'navigate' || (same && /(^|\/)(index\.html)?$/.test(url.pathname))) {
+    /* endereços com ?n= ou ?text= (captura de gastos) não vão para o cache: só a página limpa */
+    const clean = !url.search;
     e.respondWith(fetch(req).then(res => {
-      if (res && res.ok) { const copy = res.clone(); caches.open(V).then(c => c.put(req, copy)); }
+      if (clean && res && res.ok) { const copy = res.clone(); caches.open(V).then(c => c.put(req, copy)); }
       return res;
-    }).catch(() => caches.match(req).then(hit => hit || caches.match('index.html'))));
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('index.html'))));
     return;
   }
   e.respondWith(caches.match(req).then(hit => {
