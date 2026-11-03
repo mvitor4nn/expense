@@ -233,7 +233,7 @@ html.has-bg .hint,html.has-bg .note,html.has-bg .pie-empty,html.has-bg .clist{te
 .hello{font-size:13px;color:var(--muted);font-weight:500;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:48vw}
 
 /* barra: disponível */
-.avail{font-size:13.5px;font-weight:700;margin:6px 0 0;font-variant-numeric:tabular-nums;color:var(--muted)}
+.avail{display:flex;justify-content:flex-end;align-items:baseline;gap:12px;font-size:13.5px;font-weight:700;margin:6px 0 0;font-variant-numeric:tabular-nums;color:var(--muted)}
 .avail .av{color:var(--ok)}
 .status-note.bad{color:var(--bad);font-weight:700}
 
@@ -563,8 +563,8 @@ var D={
   status_h:"Situação agora|Status now|Situación actual",
   m_alert:"Aviso {p}%|Alert {p}%|Aviso {p}%", m_limit:"Limite {p}%|Limit {p}%|Límite {p}%",
   sample_note:"Os gastos mostrados são exemplos. Toque no $ › Settings › Começar do zero para registrar os seus.|The spending shown is sample data. Tap the $ › Settings › Start from scratch to enter your own.|Los gastos mostrados son ejemplos. Toca el $ › Settings › Empezar de cero para registrar los tuyos.",
-  new_exp:"Novo gasto|New expense|Nuevo gasto", f_name:"Produto ou serviço|Product or service|Producto o servicio",
-  f_name_ph:"Ex.: Arroz e feijão|E.g. Rice and beans|Ej.: Arroz y frijoles", f_price:"Preço (R$)|Price (R$)|Precio (R$)",
+  new_exp:"Novo gasto|New expense|Nuevo gasto", f_name:"Serviços|Services|Servicios",
+  f_name_ph:"Ex: Posto Ygor|E.g. Posto Ygor|Ej: Posto Ygor", f_price:"Preço (R$)|Price (R$)|Precio (R$)",
   f_cat:"Categoria|Category|Categoría", f_sub:"Subcategoria|Subcategory|Subcategoría", f_addr:"Endereço|Address|Dirección",
   f_addr_ph:"Ex.: Mercado Bom Preço, Av. Brasil, 1280|E.g. Corner Market, 12 Main St|Ej.: Mercado Central, Av. Brasil 1280",
   f_date:"Data|Date|Fecha", f_time:"Horário|Time|Hora", f_save:"Salvar gasto|Save expense|Guardar gasto",
@@ -870,7 +870,7 @@ function renderHome(){
   $('#whenChip').textContent=monthName(CUR,true);
   if(!(S.salary>0))note='<p class="status-note">'+L('need_salary')+'</p>';
   else note=(pct>=S.limit?'<p class="status-note bad">'+L('over_limit',{x:brl(s.total-S.salary*S.limit/100),p:S.limit})+'</p>':'')+
-    '<p class="avail"><span>'+L('spent_n',{a:brl(s.total)})+'</span> · <span class="av">'+L('avail_n',{b:brl(Math.max(0,S.salary-s.total))})+'</span></p>';
+    '<p class="avail"><span class="av">'+L('avail_n',{b:brl(Math.max(0,S.salary-s.total))})+'</span></p>';
   $('#pageHome').innerHTML=
     '<div class="sumrow"><div><div class="sumlabel">'+L('spent_in',{m:lang==='en'?monthName(CUR,true):monthName(CUR,true).toLowerCase()})+'</div><div class="sumvalue">'+brl(s.total)+'</div></div>'+
     (S.salary>0?'<span class="pill '+lv+'">'+L('pct_salary',{p:Math.round(pct)})+'</span>':'')+'</div>'+
@@ -1027,7 +1027,7 @@ function openCat(month,cat,sub){
   openSheet('<div class="sh-head" style="--c:'+c.color+'"><span class="sh-dot"></span><h2 class="sh-title" id="shTitle">'+esc(cn(sub||cat))+'</h2><button class="sh-close" type="button" data-close aria-label="'+L('close')+'">×</button></div>'+
     '<p class="sub">'+(sub?esc(cn(cat))+' · ':'')+monthName(month,true)+' · '+list.length+' '+L(list.length===1?'entry_1':'entry_n')+' · <b>'+brl(total)+'</b></p>'+
     '<ul class="txs" style="--c:'+c.color+'">'+list.map(function(e){
-      return '<li class="tx"><div class="tx-body">'+(sub?'':'<div class="tx-sub">'+esc(cn(e.sub))+'</div>')+'<div class="tx-name">'+esc(e.name)+'</div><div class="tx-addr">'+esc(e.addr||L('no_addr'))+'</div><div class="tx-when">'+fmtWhen(e.ts)+'</div></div>'+
+      return '<li class="tx"><div class="tx-body">'+(sub?'':'<div class="tx-sub">'+esc(cn(e.sub))+'</div>')+'<div class="tx-name">'+esc(e.name)+'</div>'+(e.addr?'<div class="tx-addr">'+esc(e.addr)+'</div>':'')+'<div class="tx-when">'+fmtWhen(e.ts)+'</div></div>'+
         '<div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div><button class="link" type="button" data-del="'+esc(e.id)+'">'+L('del')+'</button></div></li>';
     }).join('')+'</ul>');
 }
@@ -1044,7 +1044,6 @@ function openForm(){
     '<div class="field"><label for="fPrice">'+L('f_price')+'</label><input class="input" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>'+
     '<div class="field"><label for="fCat">'+L('f_cat')+'</label><select class="input" id="fCat">'+CATS.map(function(c){return '<option value="'+c.id+'">'+esc(cn(c.id))+'</option>'}).join('')+'</select></div>'+
     '<div class="field full"><label for="fSub">'+L('f_sub')+'</label><select class="input" id="fSub"></select></div>'+
-    '<div class="field full"><label for="fAddr">'+L('f_addr')+'</label><input class="input" id="fAddr" autocomplete="off" placeholder="'+esc(L('f_addr_ph'))+'"></div>'+
     '<div class="field"><label for="fDate">'+L('f_date')+'</label><input class="input" id="fDate" type="date" value="'+today+'"></div>'+
     '<div class="field"><label for="fTime">'+L('f_time')+'</label><input class="input" id="fTime" type="time" value="'+tm+'"></div>'+
     '</div><p class="status-note" id="fErr" style="color:var(--bad);margin:0 0 10px" role="alert"></p>'+
@@ -1059,7 +1058,7 @@ document.addEventListener('submit',function(e){
   var name=$('#fName').value.trim(),price=+($('#fPrice').dataset.v||0),date=$('#fDate').value,time=$('#fTime').value||'12:00';
   var err=!name?L('e_name'):!(price>0)?L('e_price'):!date?L('e_date'):'';
   if(err){$('#fErr').textContent=err;return}
-  S.expenses.push({id:'u'+Date.now().toString(36)+Math.floor(Math.random()*1e4),cat:$('#fCat').value,sub:$('#fSub').value,name:name,addr:$('#fAddr').value.trim(),price:Math.round(price*100)/100,ts:date+'T'+time});
+  S.expenses.push({id:'u'+Date.now().toString(36)+Math.floor(Math.random()*1e4),cat:$('#fCat').value,sub:$('#fSub').value,name:name,addr:'',price:Math.round(price*100)/100,ts:date+'T'+time});
   save();closeSheet();refresh();
   if(date.slice(0,7)===CUR)checkAlerts();
   if(!$('#toast').classList.contains('show'))toast('info',L('saved_t'),name+' · '+brl(price));
