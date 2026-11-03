@@ -9,26 +9,6 @@
   "orientation": "portrait",
   "background_color": "#120C20",
   "theme_color": "#6D28D9",
-  "share_target": {
-    "action": "./index.html",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url",
-      "files": [
-        {
-          "name": "media",
-          "accept": [
-            "image/*",
-            "application/pdf",
-            ".pdf"
-          ]
-        }
-      ]
-    }
-  },
   "icons": [
     {
       "src": "icon-192.png",
