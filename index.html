@@ -458,7 +458,8 @@ html.has-bg .d-panel{background:rgba(22,15,40,.97)}
             <h3 data-i18n="auto_h"></h3>
             <p class="sub" data-i18n="auto_sub"></p>
             <textarea class="input" id="autoTxt" rows="3" style="margin-top:10px;resize:vertical;font:inherit" data-i18n-ph="auto_ph" aria-label="Texto do banco"></textarea>
-            <div class="btns" style="margin-top:10px"><button class="btn" id="autoAdd" type="button" data-i18n="auto_btn"></button></div>
+            <div class="btns" style="margin-top:10px"><button class="btn" id="autoAdd" type="button" data-i18n="auto_btn"></button><button class="btn ghost" id="autoImg" type="button" data-i18n="auto_img"></button></div>
+            <input type="file" id="autoFile" accept="image/*,application/pdf,.pdf" hidden>
             <p class="sub" id="dupInfo" style="margin-top:10px;white-space:pre-line"></p>
           </div>
 
@@ -564,6 +565,9 @@ var D={
   auto_sub:"Cole o texto de uma notificação ou comprovante do banco. Gastos repetidos são ignorados sem avisar.|Paste the text of a bank notification or receipt. Repeated expenses are silently ignored.|Pega el texto de una notificación o comprobante del banco. Los gastos repetidos se ignoran sin avisar.",
   auto_ph:"Ex.: Pix enviado de R$ 25,00 para Padaria Estrela|E.g.: Pix sent R$ 25.00 to Padaria Estrela|Ej.: Pix enviado R$ 25,00 a Padaria Estrela",
   auto_btn:"Registrar gasto|Add expense|Registrar gasto",
+  auto_img:"Ler comprovante (imagem ou PDF)|Read receipt (image or PDF)|Leer comprobante (imagen o PDF)",
+  auto_reading:"Lendo o comprovante…|Reading the receipt…|Leyendo el comprobante…",
+  auto_ocr_fail:"Não consegui ler a imagem. Precisa de internet na primeira vez.|Couldn't read the image. Internet is needed the first time.|No pude leer la imagen. Se necesita internet la primera vez.",
   auto_none:"Não encontrei um valor em reais nesse texto.|I couldn't find an amount in that text.|No encontré un monto en ese texto.",
   auto_dup:"Esse gasto já estava registrado.|That expense was already recorded.|Ese gasto ya estaba registrado.",
   dup_info:"Ignorados por repetição: {n}|Ignored as duplicates: {n}|Ignorados por repetición: {n}",
@@ -1449,7 +1453,7 @@ function gRestoreFrom(file){
   });
 }
 function gEnd(msg){gBusy=false;gMsg=msg||'';renderGoogle()}
-function gFail(){gEnd(L('g_err'))}
+function gFail(e){gEnd(L('g_err')+(e&&/^http/.test(e.message||'')?' ['+e.message.replace('http ','erro ')+']':''))}
 function userHasData(){return !S.sample||S.expenses.some(function(e){return e.id.charAt(0)==='u'})}
 function gAct(a){
   if(gBusy)return;
@@ -1551,18 +1555,20 @@ function parseBank(text,strict){
   var out=/\b(enviou|enviado|enviada|transferiu|pagou|pagamento|paga|compra|debito|debitado|saque|boleto|aprovada|aprovado)\b/.test(low);
   if(inc&&!out)return null;
   if(strict&&!out)return null;
-  var m=t.match(/R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{2})?)/);
+  var m=t.match(/R[$S]\s*([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2}|[0-9]+,[0-9]{2}|[0-9]+(?:\.[0-9]{2})?)/);
   if(!m)return null;
   var price=parseFloat(m[1].indexOf(',')>-1?m[1].replace(/\./g,'').replace(',','.'):m[1]);
   if(!(price>0))return null;
   var tm=t.match(/\bE\d{8}\d{12}[A-Za-z0-9]{11}\b/),tid=tm?tm[0]:'';
   var dest='',d,td=tid?t.replace(tid,' ').replace(/\s+/g,' '):t;
-  d=td.match(/(?:\bpara|\bpra|\ba favor de|favorecido|destinat[aá]rio|recebedor|\bpago a|\bpaga a)\s*:?\s+(.+?)(?=\s+(?:R\$|CPF|CNPJ|ag[eê]ncia|banco|chave|em \d|\d{2}\/\d{2}|[àa]s \d)|\s*[.;|]|\s+[-–·•]\s|$)/i);
+  d=td.match(/(?:\bdestino(?:\s+nome)?|\bpara|\bpra|\ba favor de|favorecido|benefici[aá]rio|destinat[aá]rio|recebedor|\bpago a|\bpaga a)\s*:?\s+(.+?)(?=\s+(?:R[$S]|CPF|CNPJ|institui|ag[eê]ncia|conta|banco|chave|tipo|em \d|\d{2}\/\d{2}|[àa]s \d)|\s*[.;|]|\s+[-–·•]\s|$)/i);
   if(d)dest=d[1];
   if(!dest){d=td.match(/R\$\s*[0-9.,]+\s*[-–·•:]\s*([^.;|]+?)(?=\s*[.;|]|\s+[-–·•]\s|$)/);if(d)dest=d[1]}
   if(!dest){d=td.match(/\bem\s+([A-Za-z0-9*][^.;|]*?)(?=\s+(?:R\$|no cart[aã]o|cart[aã]o|final|[àa]s \d|\d{2}\/\d{2})|\s*[.;|]|$)/);if(d)dest=d[1]}
   dest=dest.replace(/\s+(ltda|me|eireli|s\/?a)\.?$/i,'').replace(/^(o|a)\s+/i,'').trim().slice(0,60);
-  var ts='',dm=t.match(/\b(\d{2})\/(\d{2})(?:\/(\d{4}))?(?:\D{1,8}(\d{2}):(\d{2}))?/);
+  var ts='',MES={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12},mm=t.match(/\b(\d{1,2})\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?\s+(\d{4})(?:\D{1,6}(\d{2}):(\d{2}))?/i);
+  if(mm){ts=mm[3]+'-'+pad(MES[mm[2].toLowerCase()])+'-'+pad(+mm[1])+(mm[4]?'T'+mm[4]+':'+mm[5]:'')}
+  var dm=!ts&&t.match(/\b(\d{2})\/(\d{2})(?:\/(\d{4}))?(?:\D{1,8}(\d{2}):(\d{2}))?/);
   if(dm&&+dm[2]>=1&&+dm[2]<=12&&+dm[1]>=1&&+dm[1]<=31){
     var y=dm[3]||String(NOW.getFullYear()),hm=dm[4]?dm[4]+':'+dm[5]:null;
     ts=y+'-'+dm[2]+'-'+dm[1]+(hm?'T'+hm:'');
@@ -1623,10 +1629,66 @@ document.addEventListener('click',function(e){
   else if(r==='dup')toast('info',L('auto_h'),L('auto_dup'));
   else{ta.value='';if(!$('#toast').classList.contains('show'))toast('info',L('saved_t'),brl(S.expenses[S.expenses.length-1].price))}
 });
+
+/* ---------- ler imagem do comprovante (OCR no próprio celular, via Tesseract.js) ---------- */
+var tessP=null;
+function loadTess(){
+  if(window.Tesseract)return Promise.resolve();
+  return tessP||(tessP=new Promise(function(ok,no){
+    var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload=ok;s.onerror=function(){tessP=null;no(new Error('load'))};document.head.appendChild(s);
+  }));
+}
+var PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/',pdfP=null;
+function loadScript(src){return new Promise(function(ok,no){var s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=function(){no(new Error('load'))};document.head.appendChild(s)})}
+function loadPdf(){
+  if(window.pdfjsLib)return Promise.resolve();
+  return pdfP||(pdfP=loadScript(PDFJS+'pdf.min.js').then(function(){pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js'},function(e){pdfP=null;throw e}));
+}
+function ocrBlob(blob){return loadTess().then(function(){return Tesseract.recognize(blob,'por')}).then(function(r){return r.data.text||''})}
+/* PDF: lê o texto que já vem dentro; se for um PDF de imagem, desenha a 1ª página e usa o OCR */
+function pdfText(blob){
+  return loadPdf().then(function(){return blob.arrayBuffer()}).then(function(buf){return pdfjsLib.getDocument({data:buf}).promise}).then(function(doc){
+    var n=Math.min(doc.numPages,3),jobs=[];
+    for(var i=1;i<=n;i++)jobs.push(doc.getPage(i).then(function(pg){return pg.getTextContent()}).then(function(tc){return tc.items.map(function(x){return x.str}).join(' ')}));
+    return Promise.all(jobs).then(function(a){
+      var t=a.join(' ').replace(/\s+/g,' ').trim();
+      if(t.length>=20)return t;
+      return doc.getPage(1).then(function(pg){
+        var vp=pg.getViewport({scale:2.2}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+        return pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){
+          return new Promise(function(ok){cv.toBlob(ok,'image/png')});
+        });
+      }).then(ocrBlob);
+    });
+  });
+}
+function readImage(blob){
+  toast('info',L('auto_h'),L('auto_reading'));
+  var isPdf=blob.type==='application/pdf'||/\.pdf$/i.test(blob.name||'');
+  return (isPdf?pdfText(blob):ocrBlob(blob)).then(function(text){
+    var res=ingest(text,'share');
+    if(res==='none')toast('warn',L('auto_h'),L('auto_none'));
+    else if(res==='dup')toast('info',L('auto_h'),L('auto_dup'));
+    else{var x=S.expenses[S.expenses.length-1];toast('info',L('saved_t'),x.name+' · '+brl(x.price))}
+  }).catch(function(){toast('warn',L('auto_h'),L('auto_ocr_fail'))});
+}
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#autoImg'))$('#autoFile').click()});
+document.addEventListener('change',function(e){
+  if(e.target.id!=='autoFile'||!e.target.files[0])return;
+  var f=e.target.files[0];e.target.value='';readImage(f);
+});
 /* entradas por endereço: ?n=texto da notificação (MacroDroid/Tasker) e ?text= (menu Compartilhar do Android) */
 function intakeURL(){
   var q;try{q=new URLSearchParams(location.search)}catch(e){return}
   var n=q.get('n'),sh=[q.get('title'),q.get('text'),q.get('url')].filter(Boolean).join(' ');
+  if(q.get('img')&&window.caches){
+    try{history.replaceState(null,'',location.pathname)}catch(e){}
+    caches.open('shared-v1').then(function(c){return c.match('shared-image').then(function(r){
+      if(!r)return;return r.blob().then(function(b){c.delete('shared-image');return readImage(b)});
+    })}).catch(function(){});
+    return;
+  }
   if(!n&&!sh)return;
   try{history.replaceState(null,'',location.pathname)}catch(e){}
   var r=n?ingest(n,'notif',q.get('k'),+q.get('t')||0):ingest(sh,'share');
