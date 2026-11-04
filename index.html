@@ -628,6 +628,7 @@ var D={
   icon_h:"Ícone do app|App icon|Icono de la app", icon_sub:"Troque o $ por uma foto da galeria.|Swap the $ for a photo from your gallery.|Cambia el $ por una foto de tu galería.",
   icon_pick:"Escolher da galeria|Choose from gallery|Elegir de la galería", icon_remove:"Voltar ao $|Back to $|Volver al $",
   icon_err:"Não consegui abrir a foto|Couldn't open the photo|No pude abrir la foto",
+  back_exit:"Toque em voltar de novo para sair|Press back again to exit|Toca atrás de nuevo para salir",
   lang_sub:"Escolha o idioma do app.|Choose the app language.|Elige el idioma de la app."
 };
 function L(k,v){var p=(D[k]||k).split('|'),s=p[LI]||p[0];if(v)for(var x in v)s=s.split('{'+x+'}').join(v[x]);return s}
@@ -1558,18 +1559,27 @@ function handleBack(){
   if(drill.home){drill.home=null;renderHome();return true}
   return false;
 }
-/* O Chrome do Android ignora entradas de histórico criadas sem toque do usuário e, ao voltar, fecha o app.
-   Por isso a "trava" é criada no primeiro toque (e recriada a cada toque, se tiver sumido), nunca no carregamento. */
+/* O Chrome do Android ignora entradas de histórico criadas sem toque do usuário.
+   Por isso criamos várias "travas" de uma vez, dentro de um toque, e só repomos no próximo toque. */
+var GUARDS=6,gd=0,exiting=false,lastExitTry=0;
 function armBack(){
-  try{if(!(history.state&&history.state.app))history.pushState({app:1},'')}catch(e){}
+  try{
+    if(!(history.state&&(history.state.app||history.state.root)))history.replaceState({root:1},'');
+    while(gd<GUARDS){history.pushState({app:1},'');gd++}
+  }catch(e){}
 }
 try{history.replaceState({root:1},'')}catch(e){}
 ['pointerdown','touchstart','click','keydown'].forEach(function(n){document.addEventListener(n,armBack,{capture:true,passive:true})});
 window.addEventListener('popstate',function(){
-  if(handleBack())armBack();
-  else{backExit=true;history.back()} /* já está no início: sai do app */
+  if(gd>0)gd--;
+  if(exiting){if(gd===0)history.back();else history.go(-gd);return}
+  if(handleBack())return;
+  /* já está no início: pede para voltar de novo para sair */
+  var now=Date.now();
+  if(now-lastExitTry<2000){exiting=true;if(gd===0)history.back();else history.go(-gd);return}
+  lastExitTry=now;
+  toast('warn',L('back_exit'),'');setTimeout(function(){if(Date.now()-lastExitTry>=1900)hideToast()},2000);
 });
-var backExit=false;
 
 /* ---------- início ---------- */
 $('#nick').value=S.nick;
