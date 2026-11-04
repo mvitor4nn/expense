@@ -1342,7 +1342,9 @@ idbGet(function(b){
 
 
 /* ---------- menu do $ ---------- */
+var dView=null;
 function dShow(name){
+  dView=name||null;
   $('#dList').hidden=!!name;
   $$('.d-view').forEach(function(v){v.hidden=v.id!=='dv-'+name});
   $('#dBody').scrollTop=0;
@@ -1536,6 +1538,31 @@ function renderGoogle(){
   else if(gMsg)h+='<p class="g-msg" role="status">'+esc(gMsg)+'</p>';
   el.innerHTML=h;
 }
+
+/* ---------- botão/gesto "voltar" do celular ---------- */
+/* Fecha o que estiver aberto (folha, menu, subtela, categoria, mês) e só sai do app quando já está na tela inicial. */
+function handleBack(){
+  if(!$('#sheet').hidden){closeSheet();return true}
+  if(!$('#drawer').hidden){
+    if(dView==='settings')dShow(null);
+    else if(dView)dShow('settings');
+    else dClose();
+    return true;
+  }
+  if(idx===1){
+    if(drill.hist){drill.hist=null;renderHist();return true}
+    if(histMonth){histMonth=null;renderHist();return true}
+    go(0);return true;
+  }
+  if(idx===2){go(0);return true}
+  if(drill.home){drill.home=null;renderHome();return true}
+  return false;
+}
+try{history.replaceState({root:1},'');history.pushState({app:1},'')}catch(e){}
+window.addEventListener('popstate',function(){
+  if(handleBack()){try{history.pushState({app:1},'')}catch(e){}}
+  else history.back(); /* já está no início: sai do app */
+});
 
 /* ---------- início ---------- */
 $('#nick').value=S.nick;
