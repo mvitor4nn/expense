@@ -1,5 +1,5 @@
 /* Cache do app para abrir offline. Troque a versão ao publicar mudanças grandes. */
-const V = 'expense-v6';
+const V = 'expense-v8';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 self.addEventListener('install', e => {
@@ -29,5 +29,14 @@ self.addEventListener('fetch', e => {
       return res;
     }).catch(() => hit || caches.match('index.html'));
     return hit || net;
+  }));
+});
+
+/* toque na notificação: abre (ou volta para) o app */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) { if ('focus' in c) return c.focus(); }
+    return self.clients.openWindow('./index.html');
   }));
 });
