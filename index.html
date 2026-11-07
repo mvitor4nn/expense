@@ -156,6 +156,8 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0 2px;height
 .btns{display:flex;gap:10px;flex-wrap:wrap}
 .btns .btn{flex:1 1 140px}
 .link{border:0;background:none;color:var(--muted);font-size:12.5px;text-decoration:underline;padding:2px 0}
+.tx-acts{display:flex;gap:16px;align-items:center}
+.link.edit{color:var(--text,inherit)}
 .note{font-size:13px;color:var(--muted);margin:14px 2px 0}
 
 /* barra de abas e botão */
@@ -563,7 +565,7 @@ var D={
   status_h:"Situação agora|Status now|Situación actual",
   m_alert:"Aviso {p}%|Alert {p}%|Aviso {p}%", m_limit:"Limite {p}%|Limit {p}%|Límite {p}%",
   sample_note:"Os gastos mostrados são exemplos. Toque no $ › Settings › Começar do zero para registrar os seus.|The spending shown is sample data. Tap the $ › Settings › Start from scratch to enter your own.|Los gastos mostrados son ejemplos. Toca el $ › Settings › Empezar de cero para registrar los tuyos.",
-  new_exp:"Novo gasto|New expense|Nuevo gasto", f_name:"Serviços|Services|Servicios",
+  new_exp:"Novo gasto|New expense|Nuevo gasto", edit_exp:"Editar gasto|Edit expense|Editar gasto", edit:"Editar|Edit|Editar", f_save_edit:"Salvar alterações|Save changes|Guardar cambios", upd_t:"Gasto atualizado|Expense updated|Gasto actualizado", f_name:"Serviços|Services|Servicios",
   f_name_ph:"Ex: Posto Ygor|E.g. Posto Ygor|Ej: Posto Ygor", f_price:"Preço (R$)|Price (R$)|Precio (R$)",
   f_cat:"Categoria|Category|Categoría", f_sub:"Subcategoria|Subcategory|Subcategoría", f_addr:"Endereço|Address|Dirección",
   f_addr_ph:"Ex.: Mercado Bom Preço, Av. Brasil, 1280|E.g. Corner Market, 12 Main St|Ej.: Mercado Central, Av. Brasil 1280",
@@ -1045,17 +1047,21 @@ function openCat(month,cat,sub){
     '<p class="sub">'+(sub?esc(cn(cat))+' · ':'')+monthName(month,true)+' · '+list.length+' '+L(list.length===1?'entry_1':'entry_n')+' · <b>'+brl(total)+'</b></p>'+
     '<ul class="txs" style="--c:'+c.color+'">'+list.map(function(e){
       return '<li class="tx"><div class="tx-body">'+(sub?'':'<div class="tx-sub">'+esc(cn(e.sub))+'</div>')+'<div class="tx-name">'+esc(e.name)+'</div>'+(e.addr?'<div class="tx-addr">'+esc(e.addr)+'</div>':'')+'<div class="tx-when">'+fmtWhen(e.ts)+'</div></div>'+
-        '<div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div><button class="link" type="button" data-del="'+esc(e.id)+'">'+L('del')+'</button></div></li>';
+        '<div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div><div class="tx-acts"><button class="link edit" type="button" data-edit="'+esc(e.id)+'">'+L('edit')+'</button><button class="link" type="button" data-del="'+esc(e.id)+'">'+L('del')+'</button></div></div></li>';
     }).join('')+'</ul>');
 }
 function fillSubs(){
   var c=CAT[$('#fCat').value];
   $('#fSub').innerHTML=c.subs.map(function(s){return '<option value="'+s+'">'+esc(cn(s))+'</option>'}).join('');
 }
-function openForm(){
+var editId=null,editCtx=null;
+function openForm(id){
+  var ed=typeof id==='string'?S.expenses.filter(function(x){return x.id===id})[0]:null;
+  editId=ed?ed.id:null;editCtx=ed?ctx:null;
   ctx=null;
   var today=NOW.getFullYear()+'-'+pad(NOW.getMonth()+1)+'-'+pad(NOW.getDate()),tm=pad(new Date().getHours())+':'+pad(new Date().getMinutes());
-  openSheet('<div class="sh-head"><h2 class="sh-title" id="shTitle">'+L('new_exp')+'</h2><button class="sh-close" type="button" data-close aria-label="'+L('close')+'">×</button></div>'+
+  if(ed){today=ed.ts.slice(0,10);tm=ed.ts.slice(11,16)||'12:00'}
+  openSheet('<div class="sh-head"><h2 class="sh-title" id="shTitle">'+L(ed?'edit_exp':'new_exp')+'</h2><button class="sh-close" type="button" data-close aria-label="'+L('close')+'">×</button></div>'+
     '<form id="addForm" novalidate><div class="formgrid">'+
     '<div class="field full"><label for="fName">'+L('f_name')+'</label><input class="input" id="fName" autocomplete="off" placeholder="'+esc(L('f_name_ph'))+'"></div>'+
     '<div class="field"><label for="fPrice">'+L('f_price')+'</label><input class="input" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>'+
@@ -1064,7 +1070,12 @@ function openForm(){
     '<div class="field"><label for="fDate">'+L('f_date')+'</label><input class="input" id="fDate" type="date" value="'+today+'"></div>'+
     '<div class="field"><label for="fTime">'+L('f_time')+'</label><input class="input" id="fTime" type="time" value="'+tm+'"></div>'+
     '</div><p class="status-note" id="fErr" style="color:var(--bad);margin:0 0 10px" role="alert"></p>'+
-    '<button class="btn" type="submit" style="width:100%">'+L('f_save')+'</button></form>');
+    '<button class="btn" type="submit" style="width:100%">'+L(ed?'f_save_edit':'f_save')+'</button></form>');
+  if(ed){
+    $('#fName').value=ed.name;setMoney($('#fPrice'),ed.price);
+    $('#fCat').value=ed.cat;fillSubs();$('#fSub').value=ed.sub;
+    return;
+  }
   var pre=drill.home&&CAT[drill.home]?drill.home:null;
   if(pre)$('#fCat').value=pre;
   fillSubs();$('#fName').focus();
@@ -1075,6 +1086,15 @@ document.addEventListener('submit',function(e){
   var name=$('#fName').value.trim(),price=+($('#fPrice').dataset.v||0),date=$('#fDate').value,time=$('#fTime').value||'12:00';
   var err=!name?L('e_name'):!(price>0)?L('e_price'):!date?L('e_date'):'';
   if(err){$('#fErr').textContent=err;return}
+  var cur=editId?S.expenses.filter(function(x){return x.id===editId})[0]:null;
+  if(cur){
+    cur.cat=$('#fCat').value;cur.sub=$('#fSub').value;cur.name=name;cur.price=Math.round(price*100)/100;cur.ts=date+'T'+time;
+    var back=editCtx;editId=null;editCtx=null;
+    save();closeSheet();refresh();checkAlerts();
+    if(back)openCat(back.month,back.cat,back.sub);
+    toast('info',L('upd_t'),name+' · '+brl(price));
+    return;
+  }
   S.expenses.push({id:'u'+Date.now().toString(36)+Math.floor(Math.random()*1e4),cat:$('#fCat').value,sub:$('#fSub').value,name:name,addr:'',price:Math.round(price*100)/100,ts:date+'T'+time});
   askNotif();save();closeSheet();refresh();
   if(date.slice(0,7)===CUR)checkAlerts();
@@ -1122,7 +1142,7 @@ document.addEventListener('input',function(e){if(e.target.id==='fPrice')maskMone
 var suppressClick=false;
 document.addEventListener('click',function(e){
   if(suppressClick){suppressClick=false;e.preventDefault();e.stopPropagation();return}
-  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-perf],[data-pt],[data-back],[data-del],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact]');
+  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-perf],[data-pt],[data-back],[data-del],[data-edit],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact]');
   if(!t)return;
   var has=function(a){return t.hasAttribute(a)},get=function(a){return t.getAttribute(a)};
   if(has('data-dclose'))dClose();
@@ -1136,6 +1156,7 @@ document.addEventListener('click',function(e){
   else if(has('data-fexp')){var id=get('data-fexp');fExp[id]=!fExp[id];t.setAttribute('aria-expanded',fExp[id]?'true':'false');t.parentNode.nextElementSibling.hidden=!fExp[id]}
   else if(has('data-drill')){drill[get('data-scope')]=get('data-drill');(get('data-scope')==='home'?renderHome:renderHist)()}
   else if(has('data-undrill')){drill[get('data-undrill')]=null;(get('data-undrill')==='home'?renderHome:renderHist)()}
+  else if(has('data-edit')){openForm(get('data-edit'))}
   else if(has('data-del')){
     var did=get('data-del'),c=ctx;
     S.expenses=S.expenses.filter(function(x){return x.id!==did});save();refresh();
