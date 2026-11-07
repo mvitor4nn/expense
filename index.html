@@ -220,6 +220,7 @@ html.has-bg .card,html.has-bg .tabs,html.has-bg .back,html.has-bg .empty{-webkit
 html.has-bg .panel,html.has-bg .toast{background:rgba(22,15,40,.95)}
 html.has-bg .top,html.has-bg .sumlabel,html.has-bg .sumvalue,html.has-bg h2.sec,html.has-bg .page>.sub,html.has-bg .status-note,
 html.has-bg .hint,html.has-bg .note,html.has-bg .pie-empty,html.has-bg .clist{text-shadow:0 1px 10px rgba(0,0,0,.65)}
+select.input{text-overflow:ellipsis}
 .theme-prev{height:120px;border-radius:14px;margin-top:12px;border:1.5px dashed var(--line);background:var(--surface2) center/cover no-repeat;
   display:grid;place-items:center;text-align:center;padding:10px;font-size:13px;color:var(--muted)}
 .theme-prev.on{border-style:solid}
@@ -339,8 +340,15 @@ html.has-bg .d-panel{background:rgba(22,15,40,.97)}
 
       <div class="card">
         <div class="field">
-          <label for="salary" data-i18n="salary_lbl"></label>
+          <label for="salary" id="salLbl"></label>
           <div class="money"><span>R$</span><input class="input" id="salary" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label for="va" id="vaLbl" data-i18n="va_lbl"></label>
+          <div class="money"><span>R$</span><input class="input" id="va" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>
         </div>
       </div>
 
@@ -555,7 +563,10 @@ var D={
   total_spent:"Total gasto: {x}|Total spent: {x}|Total gastado: {x}",
   set_title:"Definições|Budget|Presupuesto",
   set_sub:"Informe o salário e escolha até onde quer gastar.|Enter your salary and choose how far you want to spend.|Indica tu salario y elige hasta dónde quieres gastar.",
-  salary_lbl:"Salário recebido este mês|Salary received this month|Salario recibido este mes",
+  salary_lbl:"Salário de {m}|{m} salary|Salario de {m}",
+  va_lbl:"Saldo de VA/VR (vale alimentação)|Meal voucher balance (VA/VR)|Saldo de VA/VR (vale de comida)",
+  avail_va:"{b} no VA/VR|{b} on VA/VR|{b} en VA/VR",
+  f_pay:"Pagamento|Payment|Pago", pay_pix:"Pix|Pix|Pix", pay_debit:"Débito|Debit|Débito", pay_credit:"Crédito|Credit|Crédito", pay_va:"VR/VA|VR/VA|VR/VA", pay_cash:"Dinheiro|Cash|Efectivo",
   limit_h:"Quanto quero gastar|How much I want to spend|Cuánto quiero gastar",
   limit_pre:"Não passar de|Stay under|No pasar del", limit_post:"do salário|of my salary|del salario",
   limit_aria:"Limite de gasto em porcentagem do salário|Spending limit as a percentage of salary|Límite de gasto como porcentaje del salario",
@@ -678,6 +689,7 @@ var N={
  pets:"Pets|Pets|Mascotas", racao:"Ração e alimentação|Pet food|Comida para mascotas", vet:"Veterinário|Vet|Veterinario",
  pet_med:"Medicamentos e vacinas|Medicine & vaccines|Medicinas y vacunas", banho:"Banho e tosa|Grooming|Peluquería canina",
  pet_acess:"Acessórios e brinquedos|Accessories & toys|Accesorios y juguetes", pet_hotel:"Hotel / creche|Pet hotel / daycare|Hotel / guardería",
+ areia:"Areia / higiene|Litter / hygiene|Arena / higiene",
  casa:"Casa e Manutenção|Home Care|Hogar y mantenimiento", limpeza:"Produtos de limpeza|Cleaning products|Productos de limpieza",
  higiene_casa:"Materiais de higiene da casa|Household supplies|Artículos del hogar", decoracao:"Decoração|Decor|Decoración",
  jardim:"Jardim e plantas|Garden & plants|Jardín y plantas", diarista:"Diarista / serviços de limpeza|Cleaning service|Servicio de limpieza",
@@ -701,7 +713,7 @@ var CATS=[
  {id:'educacao',color:'#14B8A6',subs:['mensalidade','cursos','material','livros','uniforme','transp_esc','online']},
  {id:'cuidados',color:'#FB923C',subs:['higiene','cosmeticos','cabelo','manicure','academia','roupas','lavanderia']},
  {id:'lazer',color:'#34C77B',subs:['cinema','hobbies','viagens','jantares','presentes','assin_rev','jogos']},
- {id:'pets',color:'#D4A373',subs:['racao','vet','pet_med','banho','pet_acess','pet_hotel']},
+ {id:'pets',color:'#D4A373',subs:['racao','areia','vet','pet_med','banho','pet_acess','pet_hotel']},
  {id:'casa',color:'#22B8CF',subs:['limpeza','higiene_casa','decoracao','jardim','diarista','seguranca']},
  {id:'seguros',color:'#94A3B8',subs:['seg_vida','previdencia']},
  {id:'financas',color:'#2563EB',subs:['emprestimos','juros','impostos','multas','doacoes','investimentos']},
@@ -763,7 +775,7 @@ function migrate(o){
     if(!SUB[e.sub]){var m=OLDNAME[String(e.name||'').toLowerCase()]||OLDDEF[e.cat]||['outros','taxas'];e.cat=m[0];e.sub=m[1]}
     else e.cat=SUB[e.sub].cat;
   });
-  o.v=2;o.alerts=o.alerts||{};
+  o.v=2;o.alerts=o.alerts||{};o.va=isFinite(o.va)&&o.va>0?+o.va:0;
   o.fsubs=(Array.isArray(o.fsubs)?o.fsubs:[]).filter(function(s){return SUB[s]});
   o.lang=LANGS.indexOf(o.lang)>-1?o.lang:'pt';
   o.nick=typeof o.nick==='string'?o.nick.slice(0,20):'';
@@ -771,11 +783,16 @@ function migrate(o){
 }
 function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&Array.isArray(o.expenses))return migrate(o)}}catch(e){}return null}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}gSchedule()}
-var S=load()||migrate({expenses:seed(),salary:3000,limit:70,warn:60,sample:true});
+var S=load()||migrate({expenses:seed(),salary:3000,va:0,limit:70,warn:60,sample:true});
 setLangVar(S.lang);
 
 function sum(list){var by={},bySub={},total=0;list.forEach(function(e){by[e.cat]=(by[e.cat]||0)+e.price;bySub[e.sub]=(bySub[e.sub]||0)+e.price;total+=e.price});return {by:by,bySub:bySub,total:total}}
 function ofMonth(key){return S.expenses.filter(function(e){return e.ts.slice(0,7)===key})}
+/* formas de pagamento: gastos em VR/VA saem do saldo de VA; os demais saem do salário */
+var PAYS=['pix','debit','credit','va','cash'];
+function payName(p){return PAYS.indexOf(p)>-1?L('pay_'+p):''}
+function vaSpent(key){return ofMonth(key).filter(function(e){return e.pay==='va'}).reduce(function(a,e){return a+e.price},0)}
+function salSpent(key){return ofMonth(key).filter(function(e){return e.pay!=='va'}).reduce(function(a,e){return a+e.price},0)}
 
 /* ---------- valores digitados: o app põe o ponto e a vírgula ---------- */
 function maskMoney(el){
@@ -869,11 +886,12 @@ function bubbleBlock(month,scope){
 
 /* ---------- telas ---------- */
 function renderHome(){
-  var list=ofMonth(CUR),s=sum(list),pct=S.salary>0?s.total/S.salary*100:0,lv=level(pct),note;
+  var list=ofMonth(CUR),s=sum(list),ss=salSpent(CUR),vs=vaSpent(CUR),pct=S.salary>0?ss/S.salary*100:0,lv=level(pct),note;
   $('#whenChip').textContent=monthName(CUR,true);
-  if(!(S.salary>0))note='<p class="status-note">'+L('need_salary')+'</p>';
-  else note=(pct>=S.limit?'<p class="status-note bad">'+L('over_limit',{x:brl(s.total-S.salary*S.limit/100),p:S.limit})+'</p>':'')+
-    '<p class="avail"><span class="av">'+L('avail_n',{b:brl(Math.max(0,S.salary-s.total))})+'</span></p>';
+  var vaLine=S.va>0?'<span class="av">'+L('avail_va',{b:brl(Math.max(0,S.va-vs))})+'</span>':'';
+  if(!(S.salary>0))note='<p class="status-note">'+L('need_salary')+'</p>'+(vaLine?'<p class="avail">'+vaLine+'</p>':'');
+  else note=(pct>=S.limit?'<p class="status-note bad">'+L('over_limit',{x:brl(ss-S.salary*S.limit/100),p:S.limit})+'</p>':'')+
+    '<p class="avail"><span class="av">'+L('avail_n',{b:brl(Math.max(0,S.salary-ss))})+'</span>'+vaLine+'</p>';
   $('#pageHome').innerHTML=
     '<div class="sumrow"><div><div class="sumlabel">'+L('spent_in',{m:lang==='en'?monthName(CUR,true):monthName(CUR,true).toLowerCase()})+'</div><div class="sumvalue">'+brl(s.total)+'</div></div>'+
     (S.salary>0?'<span class="pill '+lv+'">'+L('pct_salary',{p:Math.round(pct)})+'</span>':'')+'</div>'+
@@ -941,7 +959,7 @@ function weekView(){
   h+='<h2 class="sec">'+L('week_list')+'</h2>';
   if(!list.length)h+='<div class="empty">'+L('week_empty')+'</div>';
   else h+='<ul class="txs">'+list.map(function(e){
-    return '<li class="tx"><div class="tx-body"><div class="tx-sub" style="--c:'+(CAT[e.cat]?CAT[e.cat].color:'var(--accent)')+'">'+esc(cn(e.sub))+'</div><div class="tx-name">'+esc(e.name)+'</div><div class="tx-when">'+e.ts.slice(8,10)+'/'+e.ts.slice(5,7)+' '+e.ts.slice(11,16)+'</div></div><div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div></div></li>';
+    return '<li class="tx"><div class="tx-body"><div class="tx-sub" style="--c:'+(CAT[e.cat]?CAT[e.cat].color:'var(--accent)')+'">'+esc(cn(e.sub))+'</div><div class="tx-name">'+esc(e.name)+'</div><div class="tx-when">'+e.ts.slice(8,10)+'/'+e.ts.slice(5,7)+' '+e.ts.slice(11,16)+(payName(e.pay)?' · '+esc(payName(e.pay)):'')+'</div></div><div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div></div></li>';
   }).join('')+'</ul>';
   return h;
 }
@@ -986,7 +1004,7 @@ function renderHist(){
 
 /* ---------- definições ---------- */
 function syncSet(){
-  var spent=sum(ofMonth(CUR)).total,pct=S.salary>0?spent/S.salary*100:0;
+  var spent=salSpent(CUR),pct=S.salary>0?spent/S.salary*100:0;
   $('#limitOut').textContent=S.limit+'%';$('#warnOut').textContent=S.warn+'%';
   $('#limitAmt').textContent=brl(S.salary*S.limit/100);$('#warnAmt').textContent=brl(S.salary*S.warn/100);
   $('#limit').value=S.limit;$('#warn').value=S.warn;
@@ -1027,7 +1045,7 @@ function alertCopy(kind,spent,pct){
 }
 function checkAlerts(){
   if(!(S.salary>0))return;
-  var spent=sum(ofMonth(CUR)).total,pct=spent/S.salary*100,a=S.alerts[CUR]||(S.alerts[CUR]={});
+  var spent=salSpent(CUR),pct=spent/S.salary*100,a=S.alerts[CUR]||(S.alerts[CUR]={});
   var hitL=pct>=S.limit,hitW=pct>=S.warn;
   if(hitL&&!a.limit){var c=alertCopy('bad',spent,pct);toast('bad',c[0],c[1]);sysNotify(c[0],c[1],'limit')}
   else if(hitW&&!hitL&&!a.warn){var d=alertCopy('warn',spent,pct);toast('warn',d[0],d[1]);sysNotify(d[0],d[1],'warn')}
@@ -1046,7 +1064,7 @@ function openCat(month,cat,sub){
   openSheet('<div class="sh-head" style="--c:'+c.color+'"><span class="sh-dot"></span><h2 class="sh-title" id="shTitle">'+esc(cn(sub||cat))+'</h2><button class="sh-close" type="button" data-close aria-label="'+L('close')+'">×</button></div>'+
     '<p class="sub">'+(sub?esc(cn(cat))+' · ':'')+monthName(month,true)+' · '+list.length+' '+L(list.length===1?'entry_1':'entry_n')+' · <b>'+brl(total)+'</b></p>'+
     '<ul class="txs" style="--c:'+c.color+'">'+list.map(function(e){
-      return '<li class="tx"><div class="tx-body">'+(sub?'':'<div class="tx-sub">'+esc(cn(e.sub))+'</div>')+'<div class="tx-name">'+esc(e.name)+'</div>'+(e.addr?'<div class="tx-addr">'+esc(e.addr)+'</div>':'')+'<div class="tx-when">'+fmtWhen(e.ts)+'</div></div>'+
+      return '<li class="tx"><div class="tx-body">'+(sub?'':'<div class="tx-sub">'+esc(cn(e.sub))+'</div>')+'<div class="tx-name">'+esc(e.name)+'</div>'+(e.addr?'<div class="tx-addr">'+esc(e.addr)+'</div>':'')+'<div class="tx-when">'+fmtWhen(e.ts)+(payName(e.pay)?' · '+esc(payName(e.pay)):'')+'</div></div>'+
         '<div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div><div class="tx-acts"><button class="link edit" type="button" data-edit="'+esc(e.id)+'">'+L('edit')+'</button><button class="link" type="button" data-del="'+esc(e.id)+'">'+L('del')+'</button></div></div></li>';
     }).join('')+'</ul>');
 }
@@ -1066,7 +1084,8 @@ function openForm(id){
     '<div class="field full"><label for="fName">'+L('f_name')+'</label><input class="input" id="fName" autocomplete="off" placeholder="'+esc(L('f_name_ph'))+'"></div>'+
     '<div class="field"><label for="fPrice">'+L('f_price')+'</label><input class="input" id="fPrice" inputmode="numeric" autocomplete="off" placeholder="0,00"></div>'+
     '<div class="field"><label for="fCat">'+L('f_cat')+'</label><select class="input" id="fCat">'+CATS.map(function(c){return '<option value="'+c.id+'">'+esc(cn(c.id))+'</option>'}).join('')+'</select></div>'+
-    '<div class="field full"><label for="fSub">'+L('f_sub')+'</label><select class="input" id="fSub"></select></div>'+
+    '<div class="field"><label for="fSub">'+L('f_sub')+'</label><select class="input" id="fSub"></select></div>'+
+    '<div class="field"><label for="fPay">'+L('f_pay')+'</label><select class="input" id="fPay">'+PAYS.map(function(p){return '<option value="'+p+'">'+esc(L('pay_'+p))+'</option>'}).join('')+'</select></div>'+
     '<div class="field"><label for="fDate">'+L('f_date')+'</label><input class="input" id="fDate" type="date" value="'+today+'"></div>'+
     '<div class="field"><label for="fTime">'+L('f_time')+'</label><input class="input" id="fTime" type="time" value="'+tm+'"></div>'+
     '</div><p class="status-note" id="fErr" style="color:var(--bad);margin:0 0 10px" role="alert"></p>'+
@@ -1074,6 +1093,7 @@ function openForm(id){
   if(ed){
     $('#fName').value=ed.name;setMoney($('#fPrice'),ed.price);
     $('#fCat').value=ed.cat;fillSubs();$('#fSub').value=ed.sub;
+    if(ed.pay)$('#fPay').value=ed.pay;
     return;
   }
   var pre=drill.home&&CAT[drill.home]?drill.home:null;
@@ -1088,14 +1108,14 @@ document.addEventListener('submit',function(e){
   if(err){$('#fErr').textContent=err;return}
   var cur=editId?S.expenses.filter(function(x){return x.id===editId})[0]:null;
   if(cur){
-    cur.cat=$('#fCat').value;cur.sub=$('#fSub').value;cur.name=name;cur.price=Math.round(price*100)/100;cur.ts=date+'T'+time;
+    cur.cat=$('#fCat').value;cur.sub=$('#fSub').value;cur.pay=$('#fPay').value;cur.name=name;cur.price=Math.round(price*100)/100;cur.ts=date+'T'+time;
     var back=editCtx;editId=null;editCtx=null;
     save();closeSheet();refresh();checkAlerts();
     if(back)openCat(back.month,back.cat,back.sub);
     toast('info',L('upd_t'),name+' · '+brl(price));
     return;
   }
-  S.expenses.push({id:'u'+Date.now().toString(36)+Math.floor(Math.random()*1e4),cat:$('#fCat').value,sub:$('#fSub').value,name:name,addr:'',price:Math.round(price*100)/100,ts:date+'T'+time});
+  S.expenses.push({id:'u'+Date.now().toString(36)+Math.floor(Math.random()*1e4),cat:$('#fCat').value,sub:$('#fSub').value,pay:$('#fPay').value,name:name,addr:'',price:Math.round(price*100)/100,ts:date+'T'+time});
   askNotif();save();closeSheet();refresh();
   if(date.slice(0,7)===CUR)checkAlerts();
   if(!$('#toast').classList.contains('show'))toast('info',L('saved_t'),name+' · '+brl(price));
@@ -1196,10 +1216,11 @@ pager.addEventListener('pointermove',function(e){if(dragX!==null&&Math.abs(e.cli
 /* definições */
 var salTimer;
 $('#salary').addEventListener('input',function(){S.salary=maskMoney(this);save();renderHome();syncSet();clearTimeout(salTimer);salTimer=setTimeout(checkAlerts,1200)});
+$('#va').addEventListener('input',function(){S.va=maskMoney(this);save();renderHome()});
 $('#limit').addEventListener('input',function(){S.limit=+this.value;if(S.warn>S.limit)S.warn=S.limit;save();refresh();checkAlerts()});
 $('#warn').addEventListener('input',function(){S.warn=Math.min(+this.value,S.limit);save();refresh();checkAlerts()});
 $('#testBtn').addEventListener('click',function(){
-  var spent=sum(ofMonth(CUR)).total,pct=S.salary>0?spent/S.salary*100:0,c=alertCopy('warn',spent,pct);
+  var spent=salSpent(CUR),pct=S.salary>0?spent/S.salary*100:0,c=alertCopy('warn',spent,pct);
   dClose();toast('warn',L('a_test_t',{p:S.warn}),c[1]);askNotif(function(ok){if(ok)sysNotify(L('a_test_t',{p:S.warn}),c[1],'test')});
 });
 var rt;
@@ -1427,7 +1448,8 @@ function applyLang(){
   $$('[data-i18n-ph]').forEach(function(el){el.placeholder=L(el.getAttribute('data-i18n-ph'))});
   $$('[data-i18n-aria]').forEach(function(el){el.setAttribute('aria-label',L(el.getAttribute('data-i18n-aria')))});
   var rb=$('#resetBtn');if(rb.dataset.armed){clearTimeout(rt);delete rb.dataset.armed}
-  setMoney($('#salary'),S.salary);
+  setMoney($('#salary'),S.salary);setMoney($('#va'),S.va);
+  $('#salLbl').textContent=L('salary_lbl',{m:monthName(CUR).slice(0,3)});
   refresh();syncMus();applyBg();renderHello();renderLangBtns();renderGoogle();
   if(!$('#sheet').hidden)closeSheet();
 }
