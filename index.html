@@ -244,6 +244,7 @@ select.input{text-overflow:ellipsis}
 /* barra: disponível */
 .avail{display:flex;justify-content:flex-end;align-items:baseline;gap:12px;font-size:13.5px;font-weight:700;margin:6px 0 0;font-variant-numeric:tabular-nums;color:var(--muted)}
 .avail .av{color:var(--ok)}
+.avb{border:0;background:none;font:inherit;font-weight:700;padding:6px 0;cursor:pointer;font-variant-numeric:tabular-nums}
 .status-note.bad{color:var(--bad);font-weight:700}
 
 /* cabeçalho das bolhas + filtro */
@@ -571,7 +572,10 @@ var D={
   set_sub:"Informe o salário e escolha até onde quer gastar.|Enter your salary and choose how far you want to spend.|Indica tu salario y elige hasta dónde quieres gastar.",
   salary_lbl:"Salário de {m}|{m} salary|Salario de {m}",
   va_lbl:"Saldo de VA/VR (vale alimentação)|Meal voucher balance (VA/VR)|Saldo de VA/VR (vale de comida)",
-  avail_va:"{b} no VA/VR|{b} on VA/VR|{b} en VA/VR",
+  avail_va:"{b} VA/VR|{b} VA/VR|{b} VA/VR",
+  bal_sal:"Editar saldo em R$|Edit balance in R$|Editar saldo en R$", bal_va:"Editar saldo VA/VR|Edit VA/VR balance|Editar saldo VA/VR",
+  bal_save:"Salvar saldo|Save balance|Guardar saldo", bal_ok:"Saldo atualizado|Balance updated|Saldo actualizado",
+  bal_note:"O saldo que sobrar passa para o mês seguinte. Se for todo usado, volta a zero.|Any leftover balance carries over to next month. If fully used, it goes back to zero.|El saldo que sobre pasa al mes siguiente. Si se usa todo, vuelve a cero.",
   f_pay:"Pagamento|Payment|Pago", pay_pix:"Pix|Pix|Pix", pay_debit:"Débito|Debit|Débito", pay_credit:"Crédito|Credit|Crédito", pay_va:"VR/VA|VR/VA|VR/VA", pay_cash:"Dinheiro|Cash|Efectivo",
   limit_h:"Quanto quero gastar|How much I want to spend|Cuánto quiero gastar",
   limit_pre:"Não passar de|Stay under|No pasar del", limit_post:"do salário|of my salary|del salario",
@@ -785,6 +789,8 @@ function migrate(o){
     if(!SUB[e.sub]){var m=OLDNAME[String(e.name||'').toLowerCase()]||OLDDEF[e.cat]||['outros','taxas'];e.cat=m[0];e.sub=m[1]}
     else e.cat=SUB[e.sub].cat;
   });
+  o.carry=o.carry&&typeof o.carry==='object'?{sal:+o.carry.sal||0,va:+o.carry.va||0}:{sal:0,va:0};
+  o.carryMonth=typeof o.carryMonth==='string'&&/^\d{4}-\d{2}$/.test(o.carryMonth)?o.carryMonth:CUR;
   o.v=2;o.alerts=o.alerts||{};o.va=isFinite(o.va)&&o.va>0?+o.va:0;
   o.fsubs=(Array.isArray(o.fsubs)?o.fsubs:[]).filter(function(s){return SUB[s]});
   o.lang=LANGS.indexOf(o.lang)>-1?o.lang:'pt';
@@ -795,6 +801,20 @@ function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}gSchedule()}
 var S=load()||migrate({expenses:seed(),salary:3000,va:0,limit:70,warn:60,sample:true});
 setLangVar(S.lang);
+
+/* saldos acumulados: o que sobra no fim do mês (R$ e VA/VR) passa para o mês seguinte; se for todo usado, zera */
+function nextKey(k){var p=k.split('-'),d=new Date(+p[0],+p[1],1);return d.getFullYear()+'-'+pad(d.getMonth()+1)}
+function rollover(){
+  var k=S.carryMonth,guard=0,ch=false;
+  while(k<CUR&&guard++<600){
+    S.carry.sal=Math.max(0,S.carry.sal+S.salary-salSpent(k));
+    S.carry.va=Math.max(0,S.carry.va+S.va-vaSpent(k));
+    k=nextKey(k);ch=true;
+  }
+  if(ch||S.carryMonth!==k){S.carryMonth=k;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+}
+function availSal(){return S.carry.sal+S.salary-salSpent(CUR)}
+function availVa(){return S.carry.va+S.va-vaSpent(CUR)}
 
 /* investimento não é gasto: fica fora da pizza, das categorias e do limite; é acompanhado à parte e acumula mês a mês */
 function isInv(e){return e.sub==='investimentos'}
@@ -908,10 +928,11 @@ function invBadge(){
 function renderHome(){
   var list=ofMonth(CUR),s=sum(list),ss=salSpent(CUR),vs=vaSpent(CUR),pct=S.salary>0?ss/S.salary*100:0,lv=level(pct),note;
   $('#whenChip').textContent=monthName(CUR,true);
-  var vaLine=S.va>0?'<span class="av">'+L('avail_va',{b:brl(Math.max(0,S.va-vs))})+'</span>':'';
+  /* sempre visível (mesmo com R$ 0,00), para dar para tocar e informar o saldo do VA/VR */
+  var vaLine='<button class="av avb" type="button" data-bal="va">'+L('avail_va',{b:brl(Math.max(0,availVa()))})+'</button>';
   if(!(S.salary>0))note='<p class="status-note">'+L('need_salary')+'</p>'+(vaLine?'<p class="avail">'+vaLine+'</p>':'');
   else note=(pct>=S.limit?'<p class="status-note bad">'+L('over_limit',{x:brl(ss-S.salary*S.limit/100),p:S.limit})+'</p>':'')+
-    '<p class="avail"><span class="av">'+L('avail_n',{b:brl(Math.max(0,S.salary-ss))})+'</span>'+vaLine+'</p>';
+    '<p class="avail"><button class="av avb" type="button" data-bal="sal">'+L('avail_n',{b:brl(Math.max(0,availSal()))})+'</button>'+vaLine+'</p>';
   $('#pageHome').innerHTML=
     '<div class="sumrow"><div><div class="sumlabel">'+L('spent_in',{m:lang==='en'?monthName(CUR,true):monthName(CUR,true).toLowerCase()})+'</div><div class="sumvalue">'+brl(s.total)+'</div></div>'+
     (S.salary>0?'<span class="pill '+lv+'">'+L('pct_salary',{p:Math.round(pct)})+'</span>':'')+'</div>'+
@@ -1088,6 +1109,21 @@ function openCat(month,cat,sub){
         '<div class="tx-side"><div class="tx-price">'+brl(e.price)+'</div><div class="tx-acts"><button class="link edit" type="button" data-edit="'+esc(e.id)+'">'+L('edit')+'</button><button class="link" type="button" data-del="'+esc(e.id)+'">'+L('del')+'</button></div></div></li>';
     }).join('')+'</ul>');
 }
+function openBal(kind){
+  var cur=Math.max(0,kind==='va'?availVa():availSal());
+  ctx=null;
+  openSheet('<div class="sh-head"><h2 class="sh-title" id="shTitle">'+L(kind==='va'?'bal_va':'bal_sal')+'</h2><button class="sh-close" type="button" data-close aria-label="'+L('close')+'">×</button></div>'+
+    '<form id="balForm" data-kind="'+kind+'" novalidate><div class="field" style="margin:14px 0 8px"><div class="money"><span>R$</span><input class="input" id="bVal" inputmode="numeric" autocomplete="off" placeholder="0,00" aria-label="'+esc(L(kind==='va'?'bal_va':'bal_sal'))+'"></div></div>'+
+    '<p class="note" style="margin:0 2px 14px">'+L('bal_note')+'</p><button class="btn" type="submit" style="width:100%">'+L('bal_save')+'</button></form>');
+  setMoney($('#bVal'),cur);$('#bVal').focus();
+}
+document.addEventListener('submit',function(e){
+  if(e.target.id!=='balForm')return;
+  e.preventDefault();
+  var x=+($('#bVal').dataset.v||0),k=e.target.getAttribute('data-kind');
+  if(k==='va')S.carry.va=x-S.va+vaSpent(CUR);else S.carry.sal=x-S.salary+salSpent(CUR);
+  save();closeSheet();refresh();toast('info',L('bal_ok'),brl(x));
+});
 function openInvest(){
   var list=S.expenses.filter(isInv).sort(function(a,b){return b.ts.localeCompare(a.ts)});
   if(!list.length){closeSheet();return}
@@ -1199,13 +1235,13 @@ document.addEventListener('change',function(e){
   var fs=el.getAttribute('data-fsub'),fc=el.getAttribute('data-fcat');
   if(fs)toggleSubs([fs],el.checked);else if(fc)toggleSubs(CAT[fc].subs,el.checked);
 });
-document.addEventListener('input',function(e){if(e.target.id==='fPrice')maskMoney(e.target)});
+document.addEventListener('input',function(e){if(e.target.id==='fPrice'||e.target.id==='bVal')maskMoney(e.target)});
 
 /* ---------- eventos ---------- */
 var suppressClick=false;
 document.addEventListener('click',function(e){
   if(suppressClick){suppressClick=false;e.preventDefault();e.stopPropagation();return}
-  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-perf],[data-pt],[data-back],[data-del],[data-edit],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact],[data-invest],[data-invadd]');
+  var t=e.target.closest('[data-drill],[data-undrill],[data-sub],[data-cat],[data-open-month],[data-perf],[data-pt],[data-back],[data-del],[data-edit],[data-close],[data-filter],[data-fclear],[data-fexp],[data-dopen],[data-dback],[data-dclose],[data-lang],[data-gact],[data-invest],[data-invadd],[data-bal]');
   if(!t)return;
   var has=function(a){return t.hasAttribute(a)},get=function(a){return t.getAttribute(a)};
   if(has('data-dclose'))dClose();
@@ -1213,6 +1249,7 @@ document.addEventListener('click',function(e){
   else if(has('data-dback'))dShow(get('data-dto')||null);
   else if(has('data-lang'))setLang(get('data-lang'));
   else if(has('data-gact'))gAct(get('data-gact'));
+  else if(has('data-bal'))openBal(get('data-bal'));
   else if(has('data-invest'))openInvest();
   else if(has('data-invadd'))openInvAdd();
   else if(has('data-close'))closeSheet();
@@ -1558,7 +1595,7 @@ function gRestoreFrom(file){
     S=migrate(p.state);AV=typeof p.avatar==='string'?p.avatar:null;saveAv();
     try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
     setLangVar(S.lang);histMonth=null;drill.home=drill.hist=null;
-    $('#nick').value=S.nick;applyAvatar();applyLang();
+    $('#nick').value=S.nick;rollover();applyAvatar();applyLang();
   });
 }
 function gEnd(msg){gBusy=false;gMsg='';renderGoogle();if(msg)toast(msg===L('g_ok_saved')||msg===L('g_ok_restored')?'info':'warn',msg,'')}
@@ -1671,6 +1708,7 @@ window.addEventListener('popstate',function(){
 
 /* ---------- início ---------- */
 $('#nick').value=S.nick;
+rollover();
 applyAvatar();applyLang();setIdx(0);checkAlerts();
 })();
 
