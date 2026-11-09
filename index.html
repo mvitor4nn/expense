@@ -916,7 +916,7 @@ function renderHome(){
     '<div class="sumrow"><div><div class="sumlabel">'+L('spent_in',{m:lang==='en'?monthName(CUR,true):monthName(CUR,true).toLowerCase()})+'</div><div class="sumvalue">'+brl(s.total)+'</div></div>'+
     (S.salary>0?'<span class="pill '+lv+'">'+L('pct_salary',{p:Math.round(pct)})+'</span>':'')+'</div>'+
     meter(pct,false)+note+
-    '<div class="pie-wrap">'+pie(s.by,s.total,CUR)+invBadge()+'</div>'+
+    '<div class="pie-wrap">'+invBadge()+'</div>'+
     (s.total>0?bubbleBlock(CUR,'home'):(invAll()>0?'<div class="sechead"><h2 class="sec">'+L('categories')+'</h2></div><div class="clist">'+invRow()+'</div>':''))+
     '<div class="hint">'+L('hint_hist')+' <span aria-hidden="true">›</span></div>';
 }
