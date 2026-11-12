@@ -640,6 +640,7 @@ var D={
   g_last:"Último backup: {d}|Last backup: {d}|Última copia: {d}", g_never:"Nenhum backup ainda|No backup yet|Aún no hay copia",
   g_save:"Salvar agora|Save now|Guardar ahora", g_restore:"Restaurar backup|Restore backup|Restaurar copia", g_out:"Sair da conta|Sign out|Cerrar sesión",
   g_busy:"Sincronizando…|Syncing…|Sincronizando…",
+  g_auto:"Backup automático diário ativado|Daily automatic backup is on|Copia automática diaria activada",
   g_found:"Encontramos um backup de {d} nesta conta. O que fazer?|We found a backup from {d} on this account. What now?|Encontramos una copia del {d} en esta cuenta. ¿Qué hacemos?",
   g_use_cloud:"Usar o backup|Use the backup|Usar la copia", g_keep_local:"Manter este aparelho|Keep this device|Mantener este dispositivo",
   g_ok_saved:"Backup salvo|Backup saved|Copia guardada", g_ok_restored:"Dados restaurados|Data restored|Datos restaurados",
@@ -1589,6 +1590,18 @@ function gSchedule(){
   clearTimeout(gTimer);
   gTimer=setTimeout(function(){gPushNow().then(renderGoogle,function(){})},4000);
 }
+/* backup automático diário: se ainda não houve backup hoje, faz um ao abrir o app (ou no primeiro toque do dia) */
+function gDue(){return !!G.email&&!gChoice&&userHasData()&&dkey(new Date(G.last||0))!==dkey(new Date())}
+var gAutoAt=0;
+function gAuto(){
+  if(gBusy||!gDue())return;
+  var now=Date.now();if(now-gAutoAt<600000)return; /* no máximo uma tentativa a cada 10 min */
+  gAutoAt=now;gBusy=true;
+  var end=function(){gBusy=false;renderGoogle()};
+  gToken(function(){gPushNow().then(end,end)},end);
+}
+['click','touchend','keydown'].forEach(function(n){document.addEventListener(n,gAuto,{capture:true,passive:true})});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)gAuto()});
 function gRestoreFrom(file){
   return gApi('https://www.googleapis.com/drive/v3/files/'+file.id+'?alt=media').then(function(p){
     if(!p||!p.state||!Array.isArray(p.state.expenses))throw new Error('bad backup');
@@ -1654,7 +1667,8 @@ function renderGoogle(){
     h='<button class="gbtn" type="button" data-gact="signin"'+dis+'>'+GLOGO+'<span>'+L('g_btn')+'</span></button>';
   }else{
     h='<p class="g-as">'+L('g_as',{e:'<b>'+esc(G.email)+'</b>'})+'</p>'+
-      '<p class="g-msg" style="margin-top:4px">'+(G.last?L('g_last',{d:gStamp(G.last)}):L('g_never'))+'</p>';
+      '<p class="g-msg" style="margin-top:4px">'+(G.last?L('g_last',{d:gStamp(G.last)}):L('g_never'))+'</p>'+
+      '<p class="g-msg" style="margin-top:4px">✓ '+L('g_auto')+'</p>';
     if(gChoice)h+='<p class="g-msg">'+L('g_found',{d:gStamp(Date.parse(gChoice.modifiedTime)||Date.now())})+'</p>'+
       '<div class="btns" style="margin-top:10px"><button class="btn" type="button" data-gact="usecloud"'+dis+'>'+L('g_use_cloud')+'</button><button class="btn ghost" type="button" data-gact="keeplocal"'+dis+'>'+L('g_keep_local')+'</button></div>';
     else h+='<div class="btns" style="margin-top:12px"><button class="btn" type="button" data-gact="save"'+dis+'>'+L('g_save')+'</button><button class="btn ghost" type="button" data-gact="restore"'+dis+'>'+L('g_restore')+'</button></div>'+
@@ -1710,6 +1724,7 @@ window.addEventListener('popstate',function(){
 $('#nick').value=S.nick;
 rollover();
 applyAvatar();applyLang();setIdx(0);checkAlerts();
+gAuto();
 })();
 
 </script>
